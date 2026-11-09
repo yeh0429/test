@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f2">
+  <title>BMI 計算機｜好好照顧自己</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #19372f;
+      --muted: #78867e;
+      --green: #39785f;
+      --line: #e8ede7;
+      --paper: #fff;
+      --bg: #f4f7f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 42px 20px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background: radial-gradient(ellipse at 12% 8%, #e8f0e6 0, transparent 30%), var(--bg);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+    .app { width: min(100%, 980px); }
+    .topline { display: flex; align-items: center; gap: 10px; margin: 0 0 18px 4px; color: var(--green); font-size: 13px; font-weight: 700; letter-spacing: .1em; }
+    .topline::before { content: ""; width: 24px; height: 1px; background: currentColor; }
+    .shell { display: grid; grid-template-columns: 1fr 1fr; min-height: 550px; overflow: hidden; border: 1px solid #e7ece6; border-radius: 26px; background: var(--paper); box-shadow: 0 24px 70px #29433312, 0 3px 10px #29433308; }
+    .form-panel { padding: 54px clamp(28px, 5vw, 64px); }
+    h1 { margin: 0; font-size: clamp(30px, 4vw, 42px); line-height: 1.2; letter-spacing: -.04em; }
+    .intro { margin: 13px 0 34px; color: var(--muted); font-size: 15px; line-height: 1.8; }
+    .field { margin: 0 0 24px; }
+    .field label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+    .field label small { color: #9aa69e; font-size: 12px; font-weight: 400; }
+    .input-wrap { position: relative; }
+    input[type="number"] { width: 100%; height: 58px; padding: 0 55px 0 17px; border: 1px solid #dfe7df; border-radius: 12px; outline: none; background: #fbfcfa; color: var(--ink); font: inherit; font-size: 17px; transition: border-color .2s, box-shadow .2s, background .2s; }
+    input[type="number"]:hover { border-color: #b9cbbd; }
+    input[type="number"]:focus { border-color: var(--green); background: white; box-shadow: 0 0 0 4px #39785f18; }
+    input::placeholder { color: #b3bdb5; }
+    .unit { position: absolute; top: 50%; right: 17px; transform: translateY(-50%); color: #8b9990; font-size: 14px; pointer-events: none; }
+    .error { min-height: 19px; margin: -14px 0 13px; color: #b34e44; font-size: 12px; }
+    .calculate { width: 100%; height: 56px; border: 0; border-radius: 12px; color: #fff; background: var(--green); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .2s, transform .2s, box-shadow .2s; }
+    .calculate:hover { transform: translateY(-1px); background: #2f684f; box-shadow: 0 8px 18px #39785f2a; }
+    .calculate:active { transform: translateY(0); }
+    .calculate:focus-visible, .reset:focus-visible { outline: 3px solid #7fb79b; outline-offset: 3px; }
+    .hint { margin: 18px 0 0; color: #9aa69e; font-size: 12px; line-height: 1.7; }
+    .result-panel { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 45px 40px; overflow: hidden; text-align: center; background: #f6f8f4; }
+    .result-panel::before, .result-panel::after { position: absolute; content: ""; border: 1px solid #e6ece3; border-radius: 50%; pointer-events: none; }
+    .result-panel::before { width: 340px; height: 340px; top: -210px; right: -160px; }
+    .result-panel::after { width: 240px; height: 240px; bottom: -155px; left: -120px; }
+    .result-content { position: relative; z-index: 1; width: 100%; max-width: 360px; }
+    .result-label { margin: 0 0 20px; color: #839087; font-size: 12px; font-weight: 700; letter-spacing: .16em; }
+    .gauge { display: grid; width: 190px; height: 190px; margin: 0 auto 21px; place-items: center; border-radius: 50%; background: conic-gradient(#dfe7df 0deg 360deg); transition: background .5s ease; }
+    .gauge-inner { display: flex; width: 166px; height: 166px; flex-direction: column; justify-content: center; align-items: center; border-radius: 50%; background: #f6f8f4; }
+    .bmi-value { color: var(--ink); font-size: 50px; font-weight: 700; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+    .bmi-unit { margin-top: 8px; color: #96a199; font-size: 12px; }
+    .status { display: inline-flex; min-height: 32px; align-items: center; padding: 5px 14px; border-radius: 99px; color: #75837a; background: #e9eee8; font-size: 13px; font-weight: 700; }
+    .message { min-height: 48px; margin: 14px 0 21px; color: #748179; font-size: 14px; line-height: 1.8; }
+    .range { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 18px; border-top: 1px solid #e4eae2; }
+    .range-item { color: #929e95; font-size: 11px; line-height: 1.7; }
+    .range-item strong { display: block; color: #67766c; font-size: 11px; font-weight: 600; }
+    .range-item.active strong { color: var(--green); }
+    .actions { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+    .action-button { padding: 8px 12px; border: 0; border-radius: 8px; color: #819087; background: transparent; font: inherit; font-size: 12px; cursor: pointer; transition: color .2s, background .2s; }
+    .action-button:hover { color: var(--green); background: #eaf0e8; }
+    .action-button:focus-visible { outline: 3px solid #7fb79b; outline-offset: 2px; }
+    .history { width: 100%; margin-top: 18px; text-align: left; }
+    .history[hidden] { display: none; }
+    .history-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #75837a; font-size: 12px; font-weight: 700; }
+    .history-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid #e4eae2; border-radius: 9px; color: #65736a; background: #ffffffa8; font-size: 11px; }
+    .history-item strong { color: var(--ink); white-space: nowrap; }
+    .history-item time { color: #96a199; white-space: nowrap; }
+    @media (max-width: 720px) {
+      body { padding: 28px 15px; align-items: start; }
+      .shell { grid-template-columns: 1fr; border-radius: 20px; }
+      .form-panel { padding: 37px 26px 31px; }
+      .intro { margin-bottom: 27px; }
+      .result-panel { min-height: 400px; padding: 35px 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <p class="topline">WELLNESS / 自我照護</p>
+    <section class="shell" aria-label="BMI 計算機">
+      <div class="form-panel">
+        <h1>了解你的<br>BMI 指數</h1>
+        <p class="intro">輸入身高與體重，看看目前的身體質量指數。<br>從認識自己開始，照顧好每一天。</p>
+        <form id="bmi-form" novalidate>
+          <div class="field">
+            <label for="height">身高 <small>請輸入公分</small></label>
+            <div class="input-wrap"><input id="height" name="height" type="number" inputmode="decimal" min="50" max="250" step="0.1" placeholder="例如：170" autocomplete="off" aria-describedby="form-error"><span class="unit">cm</span></div>
+          </div>
+          <div class="field">
+            <label for="weight">體重 <small>請輸入公斤</small></label>
+            <div class="input-wrap"><input id="weight" name="weight" type="number" inputmode="decimal" min="10" max="500" step="0.1" placeholder="例如：65" autocomplete="off" aria-describedby="form-error"><span class="unit">kg</span></div>
+          </div>
+          <p class="error" id="form-error" role="alert" aria-live="polite"></p>
+          <button class="calculate" type="submit">計算我的 BMI <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="hint">BMI 是健康評估的參考指標之一，不代表完整健康狀況。</p>
+      </div>
+      <aside class="result-panel" aria-live="polite" aria-atomic="true">
+        <div class="result-content">
+          <p class="result-label">YOUR RESULT</p>
+          <div class="gauge" id="gauge"><div class="gauge-inner"><span class="bmi-value" id="bmi-value">—</span><span class="bmi-unit">kg / m²</span></div></div>
+          <span class="status" id="status">等待計算</span>
+          <p class="message" id="message">輸入你的身高與體重，<br>結果會顯示在這裡。</p>
+          <div class="range" id="range">
+            <div class="range-item" data-range="under"><strong>低於 18.5</strong>過輕</div>
+            <div class="range-item" data-range="normal"><strong>18.5–24</strong>正常</div>
+            <div class="range-item" data-range="over"><strong>24–27</strong>過重</div>
+            <div class="range-item" data-range="obese"><strong>27 以上</strong>肥胖</div>
+          </div>
+          <div class="actions">
+            <button class="action-button" id="save-result" type="button">儲存這筆</button>
+            <button class="action-button" id="reset" type="button">重新輸入</button>
+          </div>
+          <section class="history" id="history" aria-label="已儲存的 BMI 紀錄" hidden>
+            <div class="history-heading"><span>最近紀錄</span><button class="action-button" id="clear-history" type="button">清除</button></div>
+            <ul class="history-list" id="history-list"></ul>
+          </section>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector('#bmi-form');
+    const heightInput = document.querySelector('#height');
+    const weightInput = document.querySelector('#weight');
+    const error = document.querySelector('#form-error');
+    const valueOutput = document.querySelector('#bmi-value');
+    const statusOutput = document.querySelector('#status');
+    const messageOutput = document.querySelector('#message');
+    const gauge = document.querySelector('#gauge');
+    const resetButton = document.querySelector('#reset');
+    const saveButton = document.querySelector('#save-result');
+    const clearHistoryButton = document.querySelector('#clear-history');
+    const historyPanel = document.querySelector('#history');
+    const historyList = document.querySelector('#history-list');
+    const storageKey = 'bmi-calculator-history-v1';
+    let currentResult = null;
+    const categories = [...document.querySelectorAll('.range-item')];
+    const colors = { under: '#d9ad67', normal: '#57916c', over: '#df9958', obese: '#ce7165' };
+
+    function loadHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        return Array.isArray(saved) ? saved.filter((item) =>
+          item && Number.isFinite(item.bmi) && Number.isFinite(item.height) &&
+          Number.isFinite(item.weight) && typeof item.date === 'string'
+        ).slice(0, 5) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function renderHistory() {
+      const records = loadHistory();
+      historyPanel.hidden = records.length === 0;
+      historyList.replaceChildren();
+      records.forEach((record) => {
+        const item = document.createElement('li');
+        item.className = 'history-item';
+        const measurements = document.createElement('span');
+        measurements.textContent = `${record.height} cm · ${record.weight} kg`;
+        const result = document.createElement('strong');
+        result.textContent = `BMI ${record.bmi.toFixed(1)}`;
+        const date = document.createElement('time');
+        date.dateTime = record.date;
+        date.textContent = new Date(record.date).toLocaleString('zh-TW', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+        });
+        item.append(measurements, result, date);
+        historyList.append(item);
+      });
+    }
+
+    function clearError() {
+      error.textContent = '';
+      heightInput.removeAttribute('aria-invalid');
+      weightInput.removeAttribute('aria-invalid');
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      clearError();
+      const height = Number(heightInput.value);
+      const weight = Number(weightInput.value);
+      if (!heightInput.value || !weightInput.value || !Number.isFinite(height) || !Number.isFinite(weight)) {
+        error.textContent = '請填寫身高與體重後再計算。';
+        if (!heightInput.value) heightInput.setAttribute('aria-invalid', 'true');
+        if (!weightInput.value) weightInput.setAttribute('aria-invalid', 'true');
+        (!heightInput.value ? heightInput : weightInput).focus();
+        return;
+      }
+      if (height < 50 || height > 250) {
+        error.textContent = '身高請輸入 50 至 250 公分之間。';
+        heightInput.setAttribute('aria-invalid', 'true');
+        heightInput.focus();
+        return;
+      }
+      if (weight < 10 || weight > 500) {
+        error.textContent = '體重請輸入 10 至 500 公斤之間。';
+        weightInput.setAttribute('aria-invalid', 'true');
+        weightInput.focus();
+        return;
+      }
+      const bmi = weight / ((height / 100) ** 2);
+      currentResult = { height, weight, bmi };
+      let category;
+      let label;
+      let message;
+      if (bmi < 18.5) {
+        category = 'under'; label = '體重過輕'; message = '可以留意營養攝取與飲食均衡，\n必要時諮詢專業醫療人員。';
+      } else if (bmi < 24) {
+        category = 'normal'; label = '健康範圍'; message = '目前落在健康參考範圍內，\n繼續維持均衡飲食與日常活動。';
+      } else if (bmi < 27) {
+        category = 'over'; label = '體重過重'; message = '試著建立規律活動與均衡飲食，\n循序漸進照顧自己的健康。';
+      } else {
+        category = 'obese'; label = '肥胖範圍'; message = '可考慮與醫療專業人員討論，\n找到適合自己的健康管理方式。';
+      }
+      valueOutput.textContent = bmi.toFixed(1);
+      statusOutput.textContent = label;
+      statusOutput.style.color = colors[category];
+      statusOutput.style.backgroundColor = `${colors[category]}20`;
+      messageOutput.textContent = message;
+      messageOutput.style.whiteSpace = 'pre-line';
+      categories.forEach((item) => item.classList.toggle('active', item.dataset.range === category));
+      const progress = Math.max(0, Math.min(1, (bmi - 12) / 33));
+      gauge.style.background = `conic-gradient(${colors[category]} ${progress * 360}deg, #e3e9e1 ${progress * 360}deg 360deg)`;
+      saveButton.disabled = false;
+      saveButton.textContent = '儲存這筆';
+    });
+
+    saveButton.addEventListener('click', () => {
+      if (!currentResult) {
+        error.textContent = '請先計算 BMI，再儲存結果。';
+        heightInput.focus();
+        return;
+      }
+      try {
+        const records = loadHistory();
+        records.unshift({ ...currentResult, date: new Date().toISOString() });
+        localStorage.setItem(storageKey, JSON.stringify(records.slice(0, 5)));
+        renderHistory();
+        saveButton.textContent = '已儲存 ✓';
+      } catch {
+        error.textContent = '目前無法儲存，請檢查瀏覽器的儲存空間設定。';
+      }
+    });
+
+    clearHistoryButton.addEventListener('click', () => {
+      try {
+        localStorage.removeItem(storageKey);
+        renderHistory();
+        saveButton.textContent = '儲存這筆';
+      } catch {
+        error.textContent = '目前無法清除儲存紀錄，請稍後再試。';
+      }
+    });
+
+    [heightInput, weightInput].forEach((input) => input.addEventListener('input', clearError));
+    resetButton.addEventListener('click', () => {
+      form.reset();
+      clearError();
+      currentResult = null;
+      saveButton.textContent = '儲存這筆';
+      valueOutput.textContent = '—';
+      statusOutput.textContent = '等待計算';
+      statusOutput.removeAttribute('style');
+      messageOutput.textContent = '輸入你的身高與體重，結果會顯示在這裡。';
+      messageOutput.style.whiteSpace = '';
+      categories.forEach((item) => item.classList.remove('active'));
+      gauge.style.background = 'conic-gradient(#dfe7df 0deg 360deg)';
+      renderHistory();
+      heightInput.focus();
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>
