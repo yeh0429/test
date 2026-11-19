@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 // Firebase Web App config for daily-planner-da7e4.
 const firebaseConfig = {
@@ -30,20 +30,12 @@ if (firebaseConfigured) {
   firebaseAuth = getAuth(firebaseApp);
   const googleProvider = new GoogleAuthProvider();
   googleProvider.setCustomParameters({ prompt: "select_account" });
-  getRedirectResult(firebaseAuth).catch(error => {
-    authMessage.textContent = "登入狀態確認失敗，請重新登入。";
-    authError.textContent = error.code === "auth/unauthorized-domain"
-      ? "此網站網域尚未加入 Firebase Authentication 授權網域。"
-      : `Google 登入未完成（${error.code || "未知錯誤"}）。請重新登入。`;
-    googleSignIn.hidden = false;
-    googleSignIn.disabled = false;
-  });
   googleSignIn.addEventListener("click", async () => {
     googleSignIn.disabled = true;
     authError.textContent = "";
-    authMessage.textContent = "正在前往 Google 登入…";
+    authMessage.textContent = "正在開啟 Google 登入視窗…";
     try {
-      await signInWithRedirect(firebaseAuth, googleProvider);
+      await signInWithPopup(firebaseAuth, googleProvider);
     } catch (error) {
       authMessage.textContent = "登入尚未完成，請再試一次。";
       authError.textContent = error.code === "auth/unauthorized-domain"
